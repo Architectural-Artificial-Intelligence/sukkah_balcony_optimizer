@@ -46,7 +46,8 @@ for level in levels:
     
     for polygons in data['coordinates']:
 
-        fileWrite(f, "strPath = rs.AddLine([0,0,0], [0,0,-"+str(z+3)+"])")
+        # fileWrite(f, "strPath = rs.AddLine([0,0,0], [0,0,-"+str(z+3)+"])")
+        fileWrite(f, "strPath = rs.AddLine([0,0,0], [0,0,-300])")
 
         if (hasattr(polygons[0][0], "__len__")):
             for polygon in polygons:
@@ -66,7 +67,7 @@ for level in levels:
             fileWrite(f, "rs.AddPlanarSrf(curve"+str(y)+")")
             fileWrite(f, "rs.ExtrudeCurve(curve"+str(y)+", strPath)")
             y+=1
-    z=z+3
+    z=z+300
 
 fileWrite(f, "rs.EnableRedraw(True)")
 

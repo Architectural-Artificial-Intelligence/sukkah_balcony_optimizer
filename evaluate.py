@@ -1,8 +1,7 @@
 import sys 
 import json
-import functools 
-from shapely import geometry,Polygon, get_parts
-from functions import fileWrite, polygonRSformatter
+from shapely import geometry, get_parts
+# from functions import 
 
 filename = sys.argv[1]
 
@@ -13,12 +12,10 @@ levels = json.load(input)
 
 data = []
 
-
 for level in levels:
     poly = []
-    for pt in level:
-        poly.append(geometry.shape(pt))
-    data.append(Polygon(poly))
+    polygon = geometry.shape(json.loads(level))
+    data.append(polygon)
 
 result =[]
 # convert to polygons
@@ -47,18 +44,22 @@ for polygonsIndex in range(len(data)-1):
 
 
     # Save balconies sizes and number
-    if balcony.area>2:
-        balconiesItems = get_parts(balcony).tolist()
-        # balconies = list(map(lambda x: x.area, balconiesItems))
-        balconiesScore = 0
-        for bal in balconiesItems:
-            if (bal.area >=2):
-                balconiesScore+1
+    # if balcony.area>2:
+    balconiesItems = get_parts(balcony).tolist()
+    # balconies = list(map(lambda x: x.area, balconiesItems))
+    balconiesScore = 0
+    print("Level:", polygonsIndex , "Blaconies", len(balconiesItems))
+    for bal in balconiesItems:
+        ok = ""
+        if bal.area>200:
+            ok="OK"
+        print("Area:", bal.area, ok)
         result.append({
-                'balconies':  balconiesScore,
+                'area':  bal.area,
                 # 'number': len(balconiesItems),
                 # 'area': data[current].area,
                 # 'scope':data[current].length
         })
+    
 
-print(result)
+# print(result)

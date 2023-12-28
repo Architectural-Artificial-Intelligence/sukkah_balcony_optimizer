@@ -4,7 +4,7 @@ import statistics
 import math
 import time
 import json
-from shapely import Polygon, MultiPolygon, Point, get_num_geometries,get_coordinates, get_parts, geometry, unary_union, buffer, to_geojson, get_type_id
+from shapely import Polygon, MultiPolygon, Point, get_num_geometries, get_parts, geometry, unary_union, buffer, to_geojson, get_type_id
 
 
 # ============================
@@ -58,23 +58,23 @@ def geometryToData(points):
 # ============================
 # Geometric functions
 
-def generateInitialSolutions(howManyPoints, levels, levelOffset, scale):
+def generateInitialSolutions(howManyPoints, levels, levelOffset):
     points = []
     for level in range(levels):
-        z = levelOffset*level* scale
+        z = levelOffset*level
         sides = 4
         pointsInSide = int(howManyPoints/4)
-        x = y = -howManyPoints/4/2* scale
+        x = y = 10
         for side in range(sides):
             for current in range(pointsInSide):
                 if side==0:
-                    x=x+scale
+                    x=x+2
                 if side==1:
-                    y=y+scale
+                    y=y+2
                 if side==2:
-                    x=x-scale
+                    x=x-2
                 if side==3:
-                    y=y-scale
+                    y=y-2
                 points.append(Point(x,y, z))
 
     return points
@@ -118,35 +118,39 @@ def main():
     # Initial settings
     # =================================================
 
-    initiaOptions = 100
-    numPoints = 36
+    num_generations = 200
+    initiaOptions = 50
+    num_parents_mating = 25
+
+    # how many chromosomes (values) exist in each individual
+    parent_selection_type = "sss"
+    keep_parents = 1
+
+    crossover_type = "single_point"
+
+    # mutation_type = "random"
+    # mutation_percent_genes = 10
+    mutation_type="adaptive"
+    mutation_percent_genes = [25, 12]
+    
+    random_mutation_min_val = -0.1
+    random_mutation_max_val = 1
+    numPoints = 20
     numLevels = 30
     
-    # Set gen space
-    gene_space = []
+
+    # Generate optimum building
+    optimum = np.full((numLevels-1,4), 4, dtype=float)
 
     #  Generate solutions
     data = []
 
-    scale = 100
     # generate several random creatures
     for i in range(initiaOptions):
-        points = generateInitialSolutions(numPoints, numLevels, 3, scale)
+        points = generateInitialSolutions(numPoints, numLevels, 3)
         data.append(geometryToData(points))
-    
 
 
-    min = geometryToData(generateInitialSolutions(numPoints, 1, 3, scale*0.8))
-    max = geometryToData(generateInitialSolutions(numPoints, 1, 3, scale*1.4))
-
-# dymanic bounding boxes for limits
-    gene_space_level = []
-    for i in range(len(min)):
-        gene_space_level.append({"low":min[i],"high":max[i]})
-
-#  for each level
-    for i in range(numLevels):
-        gene_space = gene_space + gene_space_level    
     
     def fitness_func(ga_instance, solution, solution_idx):
 
@@ -205,50 +209,45 @@ def main():
                     score[floorndex][index]=balconies[index]
         
        
+        # npScore = 1.0000000/ np.abs(np.array(score, dtype='f')- optimum)
 
-        npScore = 2*2*scale/ abs(2*2*scale-np.sum(np.array(score, dtype='f')))
+        # Size of balconies
+        npScore = 16/ abs(16-np.sum(np.array(score, dtype='f')))
+        # print(npScore)
+        # Distance to optimal area
         areaScore = 100 / abs(numLevels*numPoints*numPoints- statistics.mean(floorArea))
-        # print(npScore, areaScore, npScore+ areaScore)
-        return npScore # + areaScore #+ scopeScore 
+        # Degree of scope
+        # scopeScore = 10/ abs(40.00001 - sum(floorArea) / sum(scope)) 
+        # print(npScore , areaScore )
+            #   , scopeScore)
+        return npScore + areaScore #+ scopeScore 
 
 
 
     def on_gen(ga_instance):
-        time_end = time.perf_counter()
-        # calculate the duration
-        
-        time_duration = time_end - time_start
-        # report the duration
-        print(f'Took {time_duration:.3f} seconds')
-        print("Generation : ", ga_instance.generations_completed)
-        print("Fitness of the best solution :", ga_instance.best_solution()[1])
+        solution, solution_fitness, solution_idx = ga_instance.best_solution()
+        # print(f"Parameters of the best solution : {solution}")
+        print(f"Fitness value of the best solution = {solution_fitness}")
+        # print(f"Index of the best solution : {solution_idx}")
 
-    filename = 'genetic'
 
     ga_instance = pygad.GA(
         initial_population=data,
-        num_generations=50,
-        num_parents_mating=50,
+        num_generations=num_generations,
+        num_parents_mating=num_parents_mating,
         fitness_func=fitness_func,
         on_generation=on_gen,
         parallel_processing=8,
-        # random_mutation_min_val=-100,
-        # random_mutation_max_val=100,
+        random_mutation_min_val=random_mutation_min_val,
+        random_mutation_max_val=random_mutation_max_val,
         # stop_criteria="saturate_10",
-        gene_type=int,
-        gene_space=gene_space,
-        parent_selection_type="sss",
-        keep_parents=  10,
-        crossover_type="two_points",
-        mutation_type="adaptive",
-        mutation_percent_genes= [75, 50],
-        keep_elitism = 10
-        # save_best_solutions=True,
-        )
+        gene_type=[float,2],
+        parent_selection_type=parent_selection_type,
+        keep_parents=keep_parents,
+        crossover_type=crossover_type,
+        mutation_type=mutation_type,
+        mutation_percent_genes=mutation_percent_genes)
 
-    # ga_instance=  pygad.load(filename)
-    # ga_instance.num_generations=1
-    time_start = time.perf_counter()
     ga_instance.run()
 
     solution, solution_fitness, solution_idx = ga_instance.best_solution()
@@ -260,6 +259,5 @@ def main():
         solution_idx=solution_idx))
 
     renderJsonFile(dataToGeomerty(solution, numLevels))
-   
-    ga_instance.save(filename=filename)
+
 

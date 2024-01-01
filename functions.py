@@ -155,13 +155,12 @@ def main():
         building = dataToFlatGeomerty(solution, numLevels)
         if (not len(building)):
             return 0
+        optimalSize = pow(2*scale,2)
         score = []
         floorArea = []
         scope = []
         #  run on all floors, beside the roof.
         for floorndex in range(len(building)-1):
-
-            score.append([0,0,0,0])
 
             #  current floor
             currentFloor = building[floorndex]
@@ -202,12 +201,12 @@ def main():
             if (balconies):
                 # print(balconies);
                 for index in range(len(balconies)):
-                    score[floorndex][index]=balconies[index]
-        
-       
+                    if (balconies[index]>0):
+                        balScore = optimalSize-(abs(optimalSize - balconies[index]))
+                        score.append(balScore)
 
-        npScore = 2*2*scale/ abs(2*2*scale-np.sum(np.array(score, dtype='f')))
-        areaScore = 100 / abs(numLevels*numPoints*numPoints- statistics.mean(floorArea))
+        npScore = sum(score)
+        # areaScore = 100 / abs(numLevels*numPoints*numPoints- statistics.mean(floorArea))
         # print(npScore, areaScore, npScore+ areaScore)
         return npScore # + areaScore #+ scopeScore 
 
@@ -223,27 +222,30 @@ def main():
         print("Generation : ", ga_instance.generations_completed)
         print("Fitness of the best solution :", ga_instance.best_solution()[1])
 
-    filename = 'genetic'
+    filename = 'genetic2'
 
     ga_instance = pygad.GA(
         initial_population=data,
         num_generations=50,
-        num_parents_mating=50,
+        num_parents_mating=20,
         fitness_func=fitness_func,
         on_generation=on_gen,
         parallel_processing=8,
-        # random_mutation_min_val=-100,
-        # random_mutation_max_val=100,
-        # stop_criteria="saturate_10",
+        
+        stop_criteria="saturate_10",
         gene_type=int,
         gene_space=gene_space,
-        parent_selection_type="sss",
-        keep_parents=  10,
-        crossover_type="two_points",
-        mutation_type="adaptive",
-        mutation_percent_genes= [75, 50],
-        keep_elitism = 10
+        # parent_selection_type="tournament",
+        # keep_parents=  10,
+        # crossover_type="uniform",
+        mutation_type="random",
+        # mutation_by_replacement=True,
+        # mutation_percent_genes= 50,
+        # random_mutation_min_val=-50,
+        # random_mutation_max_val=50,
+        # keep_elitism = 1
         # save_best_solutions=True,
+        # allow_duplicate_genes=False
         )
 
     # ga_instance=  pygad.load(filename)

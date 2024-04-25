@@ -99,20 +99,20 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def renderJsonFile(levels):
+def renderJsonFile(levels,fileName):
     data = []
     for level in levels:
         # pl = polygonRSformatter(level);
         data.append(level)
 
-    with open('generated/'+str(time.time())+'.json', 'w') as f:
+    with open('generated/'+fileName+'.json', 'w') as f:
         json.dump(data, f, cls=NumpyEncoder)
         f.close()
 
 
 # ============================
 # Main
-def main():
+def main(filename):
 
     # =================================================
     # Initial settings
@@ -222,17 +222,17 @@ def main():
         print("Generation : ", ga_instance.generations_completed)
         print("Fitness of the best solution :", ga_instance.best_solution()[1])
 
-    filename = 'genetic2'
+    # filename = 'genetic2'
 
     ga_instance = pygad.GA(
         initial_population=data,
-        num_generations=50,
+        num_generations=100,
         num_parents_mating=20,
         fitness_func=fitness_func,
         on_generation=on_gen,
         parallel_processing=8,
         
-        stop_criteria="saturate_10",
+        stop_criteria="saturate_20",
         gene_type=int,
         gene_space=gene_space,
         # parent_selection_type="tournament",
@@ -243,7 +243,7 @@ def main():
         # mutation_percent_genes= 50,
         # random_mutation_min_val=-50,
         # random_mutation_max_val=50,
-        # keep_elitism = 1
+        keep_elitism = 1
         # save_best_solutions=True,
         # allow_duplicate_genes=False
         )
@@ -261,7 +261,7 @@ def main():
     print("Index of the best solution : {solution_idx}".format(
         solution_idx=solution_idx))
 
-    renderJsonFile(dataToGeomerty(solution, numLevels))
+    renderJsonFile(dataToGeomerty(solution, numLevels), filename)
    
     ga_instance.save(filename=filename)
 

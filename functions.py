@@ -1,53 +1,51 @@
-import pygad
-import numpy as np
-import statistics
-import math
 import time
 import json
-from shapely import Polygon, MultiPolygon, Point, get_num_geometries,get_coordinates, get_parts, geometry, unary_union, buffer, to_geojson, get_type_id
+import pygad
+import numpy as np
+from shapely import Polygon, MultiPolygon, Point, get_parts, geometry, unary_union, buffer, to_geojson, get_type_id
 
 
-# ============================
-# Data encoders
-
-def dataToGeomerty(data, numLevels):
+def data_to_geomerty(data, num_levels):
+    """Convert the gene data (string) to Shapely geometry by spliting to number of levels"""
     points = []
-    numPoints = int(len(data)/2)
-    pointsPerLevel = int(numPoints/numLevels)
+    num_points = int(len(data)/2)
+    points_per_level = int(num_points/num_levels)
     z = 0
-    for index in range(numPoints):
-        if not index % pointsPerLevel:
+    for index in range(num_points):
+        if not index % points_per_level:
             z = z+3
         points.append(Point(data[index*2], data[index*2+1], z))
 
-    byLevels = np.array_split(np.array(points), numLevels)
+    by_levels = np.array_split(np.array(points), num_levels)
 
     building = []
-    for level in byLevels:
+    for level in by_levels:
         building.append(buffer(Polygon(level),0))
-    
-    return building;
 
-def dataToFlatGeomerty(data, numLevels):
+    return building
+
+def data_to_flat_geomerty(data, num_levels):
+    """Convert the gene data (string) to Shapely geometry by spliting to number of levels, but without Z index """
+
     points = []
-    numPoints = int(len(data)/2)
-    pointsPerLevel = int(numPoints/numLevels)
-    for index in range(numPoints):
+    num_points = int(len(data)/2)
+    for index in range(num_points):
         points.append(Point(data[index*2], data[index*2+1]))
 
-    byLevels = np.array_split(np.array(points), numLevels)
+    by_levels = np.array_split(np.array(points), num_levels)
 
     building = []
-    for level in byLevels:
+    for level in by_levels:
         poly = buffer(Polygon(level),0)
         if (get_type_id(poly) != 3):
             return []
         
         building.append(poly.convex_hull)
     
-    return building;
+    return building
 
-def geometryToData(points):
+def geometry_to_data(points):
+    """Convery Point array to array"""
     data = []
     for point in points:
         data.append(point.x)
@@ -55,18 +53,17 @@ def geometryToData(points):
         # removing z value
     return data
 
-# ============================
-# Geometric functions
 
-def generateInitialSolutions(howManyPoints, levels, levelOffset, scale):
+def generate_initial_solutions(how_many_points, levels, level_offset, scale):
+    """Takes building properties and produces an array of points, which is a square with multiple levels"""
     points = []
     for level in range(levels):
-        z = levelOffset*level* scale
+        z = level_offset*level* scale
         sides = 4
-        pointsInSide = int(howManyPoints/4)
-        x = y = -howManyPoints/4/2* scale
+        points_in_side = int(how_many_points/4)
+        x = y = -how_many_points/4/2* scale
         for side in range(sides):
-            for current in range(pointsInSide):
+            for current in range(points_in_side):
                 if side==0:
                     x=x+scale
                 if side==1:
@@ -79,33 +76,28 @@ def generateInitialSolutions(howManyPoints, levels, levelOffset, scale):
 
     return points
 
-def getArea(elm):
-    return elm.area
-
-# ============================
-# File functions
-
 
 class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if  isinstance(obj, Polygon):
-            return to_geojson(obj)
-        if  isinstance(obj, MultiPolygon):
-            return to_geojson(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, Point):
-            return geometry.mapping(obj)
-        return json.JSONEncoder.default(self, obj)
+    """Class that helps to conver geometric objects to JSON"""
+    def default(self, o):
+        if  isinstance(o, Polygon):
+            return to_geojson(o)
+        if  isinstance(o, MultiPolygon):
+            return to_geojson(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        if isinstance(o, Point):
+            return geometry.mapping(o)
+        return json.JSONEncoder.default(self, o)
 
 
-def renderJsonFile(levels,fileName):
+def write_json_file(levels,file_name):
+    """Writes a building array as a JSON file"""
     data = []
     for level in levels:
-        # pl = polygonRSformatter(level);
         data.append(level)
 
-    with open('generated/'+fileName+'.json', 'w') as f:
+    with open('generated/'+file_name+'.json', 'w') as f:
         json.dump(data, f, cls=NumpyEncoder)
         f.close()
 
@@ -114,13 +106,10 @@ def renderJsonFile(levels,fileName):
 # Main
 def main(filename):
 
-    # =================================================
     # Initial settings
-    # =================================================
-
-    initiaOptions = 100
-    numPoints = 36
-    numLevels = 30
+    initia_options = 100
+    num_points = 36
+    num_levels = 30
     
     # Set gen space
     gene_space = []
@@ -129,41 +118,41 @@ def main(filename):
     data = []
 
     scale = 100
-    # generate several random creatures
-    for i in range(initiaOptions):
-        points = generateInitialSolutions(numPoints, numLevels, 3, scale)
-        data.append(geometryToData(points))
+    # generate initial buildings
+    for i in range(initia_options):
+        points = generate_initial_solutions(num_points, num_levels, 3, scale)
+        data.append(geometry_to_data(points))
     
 
-
-    min = geometryToData(generateInitialSolutions(numPoints, 1, 3, scale*0.8))
-    max = geometryToData(generateInitialSolutions(numPoints, 1, 3, scale*1.4))
+    # Define minimum and maximum range
+    min_bounds = geometry_to_data(generate_initial_solutions(num_points, 1, 3, scale*0.8))
+    max_bounds = geometry_to_data(generate_initial_solutions(num_points, 1, 3, scale*1.4))
 
 # dymanic bounding boxes for limits
     gene_space_level = []
-    for i in range(len(min)):
-        gene_space_level.append({"low":min[i],"high":max[i]})
+    for i in range(len(min_bounds)):
+        gene_space_level.append({"low":min_bounds[i],"high":max_bounds[i]})
 
 #  for each level
-    for i in range(numLevels):
+    for i in range(num_levels):
         gene_space = gene_space + gene_space_level    
     
     def fitness_func(ga_instance, solution, solution_idx):
 
-        # pts = generateInitialSolutions(numPoints,1,0)
-        # block = dataToFlatGeomerty(pts,1)
-        building = dataToFlatGeomerty(solution, numLevels)
+        # pts = generate_initial_solutions(num_points,1,0)
+        # block = data_to_flat_geomerty(pts,1)
+        building = data_to_flat_geomerty(solution, num_levels)
         if (not len(building)):
             return 0
-        optimalSize = pow(2*scale,2)
+        optimal_size = pow(2*scale,2)
         score = []
-        floorArea = []
+        floor_area = []
         scope = []
         #  run on all floors, beside the roof.
         for floorndex in range(len(building)-1):
 
             #  current floor
-            currentFloor = building[floorndex]
+            current_floor = building[floorndex]
             # Get roof
             try:
                 roof = unary_union(building[floorndex::])
@@ -171,44 +160,38 @@ def main(filename):
             except:
                 print("unary_union failed with") 
                 print(building[floorndex::])
-                continue;
+                continue
             try:
-                rest = currentFloor.difference(roof)
+                rest = current_floor.difference(roof)
                 # rest = unary_union(block, rest)
             except:
                 print("difference failed with") 
-                print(currentFloor, roof)
-                continue;
-            
-            if not currentFloor.length:
-                continue;
-            floorArea.append(currentFloor.area - rest.area) 
-            scope.append(currentFloor.area / currentFloor.length)
+                print(current_floor, roof)
+                continue
 
-            allBalconies = get_parts(rest).tolist()
-            # print(allBalconies)
-            
+            if not current_floor.length:
+                continue
+            floor_area.append(current_floor.area - rest.area) 
+            scope.append(current_floor.area / current_floor.length)
+
+            all_balconies = get_parts(rest).tolist()
+            # print(all_balconies)
+
             balconies = []
-            for bal in allBalconies:
+            for bal in all_balconies:
                 balconies.append(bal.area)
 
             balconies = sorted(balconies, reverse= True)
             balconies = balconies[0:4:]
 
-            # print(len(building[floorndex::]),len(building), roof.area, rest.area, len(allBalconies) )
-            # print(balconies)
-            
             if (balconies):
-                # print(balconies);
                 for index in range(len(balconies)):
                     if (balconies[index]>0):
-                        balScore = optimalSize-(abs(optimalSize - balconies[index]))
-                        score.append(balScore)
+                        bal_score = optimal_size-(abs(optimal_size - balconies[index]))
+                        score.append(bal_score)
 
-        npScore = sum(score)
-        # areaScore = 100 / abs(numLevels*numPoints*numPoints- statistics.mean(floorArea))
-        # print(npScore, areaScore, npScore+ areaScore)
-        return npScore # + areaScore #+ scopeScore 
+        np_score = sum(score)
+        return np_score 
 
 
 
@@ -261,7 +244,7 @@ def main(filename):
     print("Index of the best solution : {solution_idx}".format(
         solution_idx=solution_idx))
 
-    renderJsonFile(dataToGeomerty(solution, numLevels), filename)
+    write_json_file(data_to_geomerty(solution, num_levels), filename)
    
     ga_instance.save(filename=filename)
 

@@ -4,10 +4,8 @@ from shapely import geometry, get_parts, unary_union
 # from functions import 
 
 
-if (len(sys.argv)>1 and sys.argv[1]):
-    filename = sys.argv[1]
-else: 
-    filename = "1703797429.110371"
+filename = sys.argv[1]
+
 input = open('generated/'+filename+'.json', 'r')
 
 levels = json.load(input)

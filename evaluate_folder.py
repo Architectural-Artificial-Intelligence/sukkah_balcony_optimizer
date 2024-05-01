@@ -6,9 +6,9 @@ import statistics
 from shapely import geometry, get_parts, unary_union
 # from functions import 
 
-def readFile(fileName):
+def read_file(file_name):
 
-    input = open(fileName, 'r')
+    input = open(file_name, 'r')
     levels = json.load(input)
     data = []
     for level in levels:
@@ -19,8 +19,6 @@ def readFile(fileName):
 
 
 def compute(data):
-    result =[]
-
     # array of the floors, from the top
     data = data[::-1]
 
@@ -37,18 +35,17 @@ def compute(data):
         except:
             print("unary_union failed with") 
             print(balcony[0:polygonsIndex:])
-            continue;
+            continue
         try:
             rest = balcony.difference(roof)
             # rest = unary_union(block, rest)
         except:
             print("difference failed with") 
             print(polygonsIndex, roof)
-            continue;
-        
+            continue
+
         if not rest.length:
-            continue;
-        
+            continue
 
         bal = []
         balconiesItems = get_parts(rest).tolist()
@@ -58,25 +55,23 @@ def compute(data):
         levels.append(bal)
 
     # create counts
-    validBalconies = 0
-    validLevels = 0
+    valid_balconies = 0
+    valid_levels = 0
    
     for level in levels:
          # 1. Count number of valid balconies
         for balcony in level:
-            validBalconies=validBalconies+1
+            valid_balconies=valid_balconies+1
         
         # 2. How many levels with at least one balcony
         if len(level)>0:
-            validLevels=validLevels+1
+            valid_levels=valid_levels+1
 
     # 3. avarge size of balcony
     size = sum(sum(levels, []))
     stdev = statistics.stdev(sum(levels, []))
-    return [validBalconies, validLevels,size,stdev];
-    
+    return [valid_balconies, valid_levels,size,stdev];
 
-# data = []
 files = glob.glob("./generated/*")
 with open('./output.csv', newline='', mode='w', encoding='UTF8') as f:
     writer = csv.writer(f)
@@ -84,9 +79,7 @@ with open('./output.csv', newline='', mode='w', encoding='UTF8') as f:
     for file in files:
         if not file.endswith('.json'):
             continue
-        levels = readFile(file)
-        # data.append(compute(levels))
+        levels = read_file(file)
         o = compute(levels)
-        # print(o)
         writer.writerow(o)
             

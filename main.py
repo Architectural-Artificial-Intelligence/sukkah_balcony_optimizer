@@ -1,10 +1,8 @@
-from functions import main
 import time
+from functions import main
 
-iName = str(time.time())
+time_name = str(time.time())
 
 for i in range(200): 
-    filename = iName+"."+str(i)
+    filename = time_name+"."+str(i)
     main(filename)
-
-

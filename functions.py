@@ -104,10 +104,10 @@ def write_json_file(levels,file_name):
 
 # ============================
 # Main
-def main(filename):
+def main(filename, initia_options,num_parents_mating):
 
     # Initial settings
-    initia_options = 100
+    # initia_options = 100
     num_points = 36
     num_levels = 30
     
@@ -210,7 +210,7 @@ def main(filename):
     ga_instance = pygad.GA(
         initial_population=data,
         num_generations=100,
-        num_parents_mating=20,
+        num_parents_mating=num_parents_mating,
         fitness_func=fitness_func,
         on_generation=on_gen,
         parallel_processing=8,

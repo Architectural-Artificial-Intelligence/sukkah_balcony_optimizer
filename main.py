@@ -5,4 +5,4 @@ time_name = str(time.time())
 
 for i in range(200): 
     filename = time_name+"."+str(i)
-    main(filename)
+    main(filename, 100, 20)
